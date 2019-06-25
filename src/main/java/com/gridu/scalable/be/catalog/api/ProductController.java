@@ -26,7 +26,7 @@ public class ProductController {
     public ResponseEntity<Product> productById(@PathVariable String id) {
         return productService.findById(id)
                 .map(product -> new ResponseEntity(product, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity(HttpStatus.NOT_FOUND));
+                .orElseGet(() -> new ResponseEntity("no data", HttpStatus.OK));
     }
 
     @GetMapping("")
