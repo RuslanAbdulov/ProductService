@@ -1,60 +1,43 @@
 package com.gridu.scalable.be.catalog.repository;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.gridu.scalable.be.catalog.domain.Product;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 
 @Repository
 public class CatalogRepository {
 
-    private Map<String, Product> idKeyMap = new HashMap<>();
-    private ArrayListMultimap<String, Product> skuKeyMultimap = ArrayListMultimap.create();
+    private final RestTemplate restTemplate;
+
+    public CatalogRepository(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public Optional<Product> findById(String id) {
-        return Optional.ofNullable(idKeyMap.get(id));
+        ResponseEntity<Product> response =
+                restTemplate.exchange("http://catalog-service/api/catalog/products/{id}",
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<Product>(){},
+                        id);
+
+        return Optional.ofNullable(response.getBody());
     }
 
     public List<Product> findBySku(String sku) {
-        return skuKeyMultimap.get(sku);
+        ResponseEntity<List<Product>> response =
+                restTemplate.exchange("http://catalog-service/api/catalog/products?sku={sku}",
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<List<Product>>(){},
+                        sku);
+
+        return response.getBody();
     }
 
-    @PostConstruct
-    void loadData() {
-        File file = new File("./src/main/resources/static/jcpenney_com-ecommerce_sample.csv");
-        try (CSVParser csvParser = CSVParser.parse(file, Charset.defaultCharset() ,CSVFormat.EXCEL.withHeader())){
-            csvParser.iterator().forEachRemaining(record -> {
-                Product product = new Product(
-                        record.get("uniq_id"),
-                        record.get("sku"),
-                        record.get("name_title"),
-                        record.get("description"),
-                        record.get("list_price"),
-                        record.get("sale_price"),
-                        record.get("category"),
-                        record.get("category_tree"),
-                        record.get("average_product_rating"),
-                        record.get("product_url"),
-                        record.get("product_image_urls"),
-                        record.get("brand"),
-                        record.get("total_number_reviews"),
-                        record.get("Reviews")
-                );
-
-                idKeyMap.put(product.getId(), product);
-                skuKeyMultimap.put(product.getSku(), product);
-            });
-        } catch (IOException e) {
-            System.out.println("Could not parse product data, stop the application.");
-            throw new RuntimeException(e);
-        }
-
-    }
 }

@@ -18,13 +18,17 @@ public class InventoryRepository {
         this.restTemplate = restTemplate;
     }
 
+    public Optional<ProductInventory> findById(String id) {
+        return findByIds(Collections.singletonList(id)).stream().findFirst();
+    }
+
     public List<ProductInventory> findByIds(List<String> ids) {
         ResponseEntity<List<ProductInventory>> response =
-                restTemplate.exchange("http://inventory-service/api/inventory?uniq_ids={ids}",
+                restTemplate.exchange("http://inventory-service/api/inventory?uniq_ids={uniq_ids}",
                         HttpMethod.GET,
                         null,
                         new ParameterizedTypeReference<List<ProductInventory>>(){},
-                        ids);
+                        String.join(",", ids));
 
         return response.getBody();
     }
